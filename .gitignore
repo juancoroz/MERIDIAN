@@ -1,23 +1,69 @@
-### AL ###
-#Template for AL projects for Dynamics 365 Business Central
-#launch.json folder
+# === Build artifacts ===
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.exe
+*.d
+
+# rocket_6dof binaries (no extensions on Linux, by name)
+/rocket_6dof/mission
+/rocket_6dof/mission_mc
+/rocket_6dof/mission_sobol
+/rocket_6dof/mission_worker
+/rocket_6dof/mission_gui
+/rocket_6dof/build_mc_viewer
+/rocket_6dof/build_viewer
+/rocket_6dof/sobol_merge
+/rocket_6dof/env_sweep
+/rocket_6dof/*_test
+/rocket_6dof/aero_deck_test_vehicle
+
+# OSK example binaries
+/examples/hello
+/examples/shm
+/examples/ex_*/main
+/examples/util_demo/util_demo
+/examples/vmq_demo/vmq_demo
+/examples/sync_test/sync_test
+/examples/sync_test/order_test
+
+# === Simulation outputs ===
+*.csv
+mission_log.csv
+monte_carlo_outputs.csv
+sobol_indices*.csv
+monte_carlo_summary*.txt
+sobol_summary*.txt
+mc_viewer*.html
+!*_template.html      # but keep the template files
+
+# === Third-party libraries (user must populate) ===
+/rocket_6dof/third_party/imgui/*.cpp
+/rocket_6dof/third_party/imgui/*.h
+/rocket_6dof/third_party/imgui/backends/*.cpp
+/rocket_6dof/third_party/imgui/backends/*.h
+/rocket_6dof/third_party/implot/*.cpp
+/rocket_6dof/third_party/implot/*.h
+/rocket_6dof/third_party/stb/*.h
+!**/third_party/**/README.md     # but keep the README stubs
+
+# === Editor / IDE ===
+*.swp
+*.swo
+*~
 .vscode/
-#Cache folder
-.alcache/
-#Symbols folder
-.alpackages/
-#Snapshots folder
-.snapshots/
-#Testing Output folder
-.output/
-#Extension App-file
-*.app
-#Rapid Application Development File
-rad.json
-#Translation Base-file
-*.g.xlf
-#License-files
-*.bclicense
-*.flf
-#Test results file
-TestResults.xml
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+
+# === Generated screenshots / scratch ===
+*.png
+!docs/**/*.png       # keep any committed documentation images
+gui_screenshots/
+
+# === Logs ===
+*.log
