@@ -1,0 +1,10 @@
+{
+  "global": {"ST": 0.1, "S_ij": 1},
+  "per_output": {
+    "fpa": {"skip": true},
+    "ins_att_err": {"ST": 0.02},
+    "ins_pos_err": {"ST": 0.05},
+    "psi": {"skip": true},
+    "theta": {"ST": 0.5}
+  }
+}

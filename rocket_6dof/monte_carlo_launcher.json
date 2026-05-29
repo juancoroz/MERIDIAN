@@ -1,0 +1,258 @@
+// =====================================================================
+//  monte_carlo_launcher.json -- MC + Sobol for the launcher config
+//
+//  Builds on mission_launcher.json (the realistic small-launcher
+//  trajectory) by adding propulsion dispersions on each of the 3
+//  stages, launch-attitude uncertainty, and a sensor noise seed for
+//  navigation variation.
+//
+//  This is the recommended baseline for sensitivity studies that need
+//  to exercise launcher-class flight regimes -- transonic max-Q,
+//  vacuum coast, orbital insertion.  monte_carlo_3stage.json (the
+//  sounding-rocket baseline) remains for fast-running studies that
+//  don't need full launcher dynamics.
+//
+//  Variables and dispersions chosen to be:
+//    * physically realistic (1-sigma values from real launcher
+//      manufacturing tolerances)
+//    * large enough to drive observable variance in the outputs
+//      (otherwise Sobol indices are noise)
+//    * small enough not to drive the autopilot into instability
+//      (the closed-loop autopilot is tuned for the nominal vehicle;
+//      large perturbations from nominal will produce tumbling)
+//
+//  Sobol groups by stage so we can read off how much variance comes
+//  from each stage.  Same grouping convention as monte_carlo_3stage.
+//
+//  Run time at n_runs=200: ~12 minutes wallclock with n_workers=8
+//  (single deterministic launcher run is 540s of sim time).
+// =====================================================================
+{
+  "propulsion": {
+    "mprop":          3,
+    "vmass0":         12700.0,
+    "fmass0":         9500.0,
+    "spi":            290.0,
+    "fuel_flow_rate": 61.3,
+    "moi_roll_0":     150.0,
+    "moi_roll_1":     50.0,
+    "moi_trans_0":    25000.0,
+    "moi_trans_1":    8000.0,
+    "xcg_0":          8.5,
+    "xcg_1":          7.0,
+    "stages": [
+      {
+        "vmass0":           12700.0,
+        "fmass0":           9500.0,
+        "spi":              290.0,
+        "fuel_flow_rate":   61.3,
+        "xcg_0":            8.5,
+        "xcg_1":            7.0,
+        "moi_roll_0":       150.0,
+        "moi_roll_1":       50.0,
+        "moi_trans_0":      25000.0,
+        "moi_trans_1":      8000.0,
+        "dry_mass_dropped": 1500.0,
+        "coast_to_next":    5.0
+      },
+      {
+        "vmass0":           1700.0,
+        "fmass0":           1200.0,
+        "spi":              320.0,
+        "fuel_flow_rate":   5.0,
+        "xcg_0":            3.5,
+        "xcg_1":            3.0,
+        "moi_roll_0":       20.0,
+        "moi_roll_1":       8.0,
+        "moi_trans_0":      2000.0,
+        "moi_trans_1":      800.0,
+        "dry_mass_dropped": 300.0,
+        "coast_to_next":    5.0
+      },
+      {
+        "vmass0":           200.0,
+        "fmass0":           130.0,
+        "spi":              320.0,
+        "fuel_flow_rate":   1.0,
+        "xcg_0":            1.5,
+        "xcg_1":            1.2,
+        "moi_roll_0":       2.0,
+        "moi_roll_1":       0.8,
+        "moi_trans_0":      80.0,
+        "moi_trans_1":      30.0,
+        "dry_mass_dropped": 0.0,
+        "coast_to_next":    0.0
+      }
+    ]
+  },
+
+  "aerodynamics": {
+    "maero":     13, "refa": 1.13, "refd": 1.2, "xcg_ref": 7.0,
+    "aero_file": "aero.txt",
+    "tag_ca0":   "ca0slv3_vs_mach",
+    "tag_caa":   "caaslv3_vs_mach",
+    "tag_ca0b":  "ca0bslv3_vs_mach",
+    "tag_cn0":   "cn0slv3_vs_mach_alpha",
+    "tag_clm0":  "clm0slv3_vs_mach_alpha",
+    "tag_clmq":  "clmqslv3_vs_mach"
+  },
+
+  "tvc":      { "mtvc": 1, "gtvc": 1.0, "parm": 18.0, "del_max": 6.0 },
+  "rcs":      {
+    "mrcs_moment": 1, "mrcs_force": 0,
+    "rcs_lim": 200.0, "rcs_db": 0.5, "moment_arm": 3.0
+  },
+  "control":  {
+    "maut":            60,
+    "vac_rate_damp":   2.0,
+    "vac_max_gain":    1.0,
+    "tau_att":         5.0,
+    "q_max":           5.0,
+    "theta_com_inertial": 89.0,
+    "psi_com_inertial":   90.0,
+    "delimx":          6.0,
+    "drlimx":          6.0,
+    "gnmax":           5.0,
+    "gymax":           5.0,
+    "thrust_loc":      18.0
+  },
+  "guidance": {
+    "mguide":          2,
+    "t_att_start":     10.0,
+    "t_att_end":       150.0,
+    "theta_com_start": 89.0,
+    "theta_com_end":   20.0,
+    "psi_com_start":   90.0,
+    "psi_com_end":     90.0
+  },
+  "ins": {
+    "mins":        4,
+    "ins_step":    1.0,
+    "ins_align":   1.0,
+    "bias_accel":  [1.0e-4, 1.0e-4, 1.0e-4],
+    "bias_gyro":   [1.0e-5, 1.0e-5, 1.0e-5],
+    "noise_accel": 1.0e-3,
+    "noise_gyro":  1.0e-4
+  },
+  "gps": {
+    "mgps":           2,
+    "gps_step":       1.0,
+    "gps_alt":        20000.0,
+    "noise_pos":      5.0,
+    "noise_vel":      0.1,
+    "noise_seed":     1.0
+  },
+  "startrack": {
+    "mstar":          2,
+    "startrack_step": 1.0,
+    "startrack_alt":  100000.0,
+    "star_acqtime":   2.0,
+    "tilt_noise":     1.0e-4
+  },
+  "intercept": {
+    "check_alt_max":  false,
+    "check_time_max": true,
+    "alt_max":        2000000.0,
+    "t_max":          540.0
+  },
+  "launch": {
+    "lonx0": -80.0, "latx0": 28.5, "alt0": 0.0,
+    "dvbe0": 0.01, "psivdx0": 90.0,
+    "thtvdx0": 89.0, "psibdx0": 90.0, "thtbdx0": 89.0,
+    "phibdx0": 0.0, "ppx0": 0.0, "qqx0": 0.0, "rrx0": 0.0
+  },
+  "sim":      { "dt": 0.01, "t_max": 540.0 },
+
+  // ---- Monte Carlo block ----
+  // Variable rationale:
+  //   * Per-stage fmass0 (fuel-loading uncertainty): 1-sigma = 1% of
+  //     nominal.  Real launcher prop loading is typically <0.5% but
+  //     1% gives more observable variance for analysis.
+  //   * Per-stage spi (Isp variation): 1-sigma = 1.5%.  Reflects
+  //     engine-to-engine variation in real hardware.
+  //   * Stage 1 fuel_flow_rate: 1-sigma = 1%.  Tied to engine
+  //     throttle uncertainty.
+  //   * Launch thtbdx0: uniform 88.5-89.5 deg.  Pre-launch attitude
+  //     alignment uncertainty.
+  //   * Launch psibdx0: uniform 89.5-90.5 deg.  Heading alignment.
+  //   * gps.noise_seed: uniform 1-1e6.  Sensor noise stream
+  //     variation; isolates Monte Carlo seed effects from physical
+  //     uncertainty.
+  "monte_carlo": {
+    "n_runs": 200,
+    "n_workers": 0,
+    "seed": 42,
+    "variables": [
+      { "path": "propulsion.stages[0].fmass0",         "distribution": "normal",  "mean": 9500.0, "stddev": 95.0 },
+      { "path": "propulsion.stages[0].spi",            "distribution": "normal",  "mean": 290.0,  "stddev": 4.35 },
+      { "path": "propulsion.stages[0].fuel_flow_rate", "distribution": "normal",  "mean": 61.3,   "stddev": 0.613 },
+      { "path": "propulsion.stages[1].fmass0",         "distribution": "normal",  "mean": 1200.0, "stddev": 12.0 },
+      { "path": "propulsion.stages[1].spi",            "distribution": "normal",  "mean": 320.0,  "stddev": 4.8 },
+      { "path": "propulsion.stages[2].fmass0",         "distribution": "normal",  "mean": 130.0,  "stddev": 1.3 },
+      { "path": "propulsion.stages[2].spi",            "distribution": "normal",  "mean": 320.0,  "stddev": 4.8 },
+      { "path": "launch.thtbdx0",                       "distribution": "uniform", "low":  88.5,   "high": 89.5 },
+      { "path": "launch.psibdx0",                       "distribution": "uniform", "low":  89.5,   "high": 90.5 },
+      { "path": "gps.noise_seed",                       "distribution": "uniform", "low":  1.0,    "high": 1e6 }
+    ],
+    "outputs": [
+      "t_end", "alt", "dvbi", "fpa", "theta", "psi",
+      "ins_pos_err", "ins_vel_err", "ins_att_err",
+      "delecx", "delrcx",
+      "sin_psi", "cos_psi", "sin_theta", "cos_theta"
+    ]
+  },
+
+  // ---- Sobol block ----
+  // n_base=128 is the default starting point.  For N variables this
+  // produces n_base * (N+2) sims per Sobol pass = 128 * 12 = 1536
+  // (first-order only), plus n_base * 12 for second-order = 3072,
+  // plus n_base * (N choose 3) * 12 ~ tens of thousands for third.
+  // Use embedded auto-scale via target_ci_width to size N for your
+  // CI tolerance.
+  //
+  // Groups capture the stage-wise variance partition that users
+  // typically want from a multi-stage launcher analysis.
+  "sobol": {
+    "n_base": 128,
+    "n_workers": 0,
+    "seed": 42,
+    "n_bootstrap": 500,
+    "bootstrap_ci_level": 0.95,
+    "second_order": true,
+    "groups": [
+      {
+        "name": "stage1",
+        "paths": [
+          "propulsion.stages[0].fmass0",
+          "propulsion.stages[0].spi",
+          "propulsion.stages[0].fuel_flow_rate"
+        ]
+      },
+      {
+        "name": "stage2",
+        "paths": [
+          "propulsion.stages[1].fmass0",
+          "propulsion.stages[1].spi"
+        ]
+      },
+      {
+        "name": "stage3",
+        "paths": [
+          "propulsion.stages[2].fmass0",
+          "propulsion.stages[2].spi"
+        ]
+      },
+      {
+        "name": "launch",
+        "paths": [
+          "launch.thtbdx0",
+          "launch.psibdx0"
+        ]
+      },
+      {
+        "name": "sensor",
+        "paths": [ "gps.noise_seed" ]
+      }
+    ]
+  }
+}

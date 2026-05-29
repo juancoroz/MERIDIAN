@@ -1,0 +1,65 @@
+# Free-form input file demonstrating all utility features.
+# Blank lines and lines starting with arbitrary prose are fine
+# as long as the first word isn't a key/tag a get*() call will look for.
+
+# Some loose top-level parameters that should NOT be picked up
+# when we scope to the Airframe tag.
+xka = -44.486
+xkg = 3282.29
+xcp = 2.45
+xcg = 1.198
+
+The following data came from Fred B.
+
+Airframe
+xcp = 1.448            center-of-pressure
+xcg = 1.422            temporary value - needs to be updated
+dia = 0.886315
+xji = 2.18440
+cmq = 0.0001
+cl  = 0.0
+n_targets = 3
+run_title = baseline
+
+# A 1-D thrust profile, exactly as Appendix 1.1.1.5 specifies.
+thrust_profile
+5
+time thrust
+0. 0.
+1. 1000.
+2. 2000.
+3. 3000.
+4. 4000.
+
+# A 2-D drag table, exactly as Appendix 1.1.1.6 specifies.
+cd_table
+4 3
+mach
+1. 2. 3. 4.
+alph
+5. 10. 15.0
+cd
+5.  10. 15.
+10. 20. 30.
+15. 30. 45.
+20. 40. 60.
+
+# A 3-D drag-with-thrust table, exactly as Appendix 1.1.1.7 specifies.
+cd_table_thrust
+4 3 2
+mach
+1. 2. 3. 4.
+alph
+5. 10. 15.0
+thrust
+1. 10.
+cd
+5.  10. 15.
+10. 20. 30.
+15. 30. 45.
+20. 40. 60.
+
+50.  100. 150.
+100. 200. 300.
+150. 300. 450.
+200. 400. 600.

@@ -1,0 +1,78 @@
+// =====================================================================
+//  mission_test_vehicle.json -- Custom test vehicle using a hand-built
+//  Missile DATCOM-style aero deck (aero_deck_test_vehicle.asc).
+//
+//  Demonstrates that the system can fly with any DATCOM-format deck
+//  the user provides.  Vehicle parameters chosen to be physically
+//  consistent with the aero deck:
+//    - body length L = 6 m
+//    - reference diameter d = 0.5 m
+//    - reference area S = pi * (d/2)^2 = 0.196 m^2
+//    - xcg_ref = 0.6 L = 3.6 m (where the moment table is centered)
+//    - actual CG: 2.4 m full -> 2.0 m empty (well forward of xcp)
+//
+//  The pitching-moment table peaks at the supersonic-unstable region
+//  (M > 1.1), so this is a good test of the autopilot's ability to
+//  hold attitude through the transonic transition.
+// =====================================================================
+{
+  "propulsion": {
+    "mprop":          3,
+    "vmass0":         500.0,       // smaller / lighter than baseline
+    "fmass0":         250.0,
+    "spi":            260.0,       // lower-Isp solid propellant
+    "fuel_flow_rate": 12.5,        // -> 20 sec burn
+    "moi_roll_0":     5.0,   "moi_roll_1":  2.5,
+    "moi_trans_0":    250.0, "moi_trans_1": 125.0,
+    "xcg_0":          2.4,         // [m] CG from nose, full
+    "xcg_1":          2.0          //     CG from nose, empty
+  },
+  "aerodynamics": {
+    "maero":     13,
+    "refa":      0.196,            // [m^2] body cross-section
+    "refd":      0.5,              // [m]   body diameter
+    "xcg_ref":   3.6,              // [m]   reference for moment table
+    "aero_file": "aero_deck_test_vehicle.asc",   // <-- our DATCOM deck
+    "tag_ca0":   "ca0test_vs_mach",
+    "tag_caa":   "caatest_vs_mach",
+    "tag_ca0b":  "ca0btest_vs_mach",
+    "tag_cn0":   "cn0test_vs_mach_alpha",
+    "tag_clm0":  "clm0test_vs_mach_alpha",
+    "tag_clmq":  "clmqtest_vs_mach"
+  },
+  "tvc":     { "mtvc": 1, "gtvc": 1.0, "parm": 5.0, "del_max": 12.0 },
+  "rcs":     { "mrcs_moment": 0, "mrcs_force": 0 },
+  "control": {
+    "maut": 60, "vac_rate_damp": 0.5, "vac_max_gain": 1.0,
+    "tau_att": 1.0, "q_max": 15.0,
+    "theta_com_inertial": 89.0, "psi_com_inertial": 90.0,
+    "delimx": 12.0, "drlimx": 12.0,
+    "gnmax": 5.0, "gymax": 5.0
+  },
+  "guidance": {
+    "mguide":          2,
+    "t_att_start":     3.0,
+    "t_att_end":       12.0,
+    "theta_com_start": 89.0,
+    "theta_com_end":   75.0,
+    "psi_com_start":   90.0,
+    "psi_com_end":     90.0
+  },
+  "ins":   { "mins": 1, "bias_accel": [0.001, 0, 0], "bias_gyro": [1.0e-5, 0, 0] },
+  "gps":   { "mgps": 2, "gps_step": 1.0, "rpos": 5.0, "rvel": 0.1, "noise_seed": 12345 },
+  "startrack": {
+    "mstar": 2, "startrack_step": 1.0, "startrack_alt": 100000.0,
+    "star_acqtime": 2.0, "tilt_noise": 1.0e-4
+  },
+  "intercept": {
+    "check_alt_max": true, "check_time_max": true,
+    "alt_max": 100000.0, "t_max": 20.0
+  },
+  "launch": {
+    "lonx0": -80.0, "latx0": 28.5, "alt0": 0.0,
+    "dvbe0": 0.01, "psivdx0": 90.0, "thtvdx0": 89.0,
+    "psibdx0": 90.0, "thtbdx0": 89.0, "phibdx0": 0.0
+  },
+  "logger": { "sample_period": 0.1, "filename": "mission_test_vehicle_log.csv" },
+  "sim":    { "dt": 0.01, "t_max": 21.0 }
+}

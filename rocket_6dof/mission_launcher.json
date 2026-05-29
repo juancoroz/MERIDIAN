@@ -1,0 +1,317 @@
+// =====================================================================
+//  mission_launcher.json -- realistic small-launcher trajectory
+//
+//  Modeled after a small commercial launcher (Electron / Astra class).
+//  Unlike mission_3stage.json (which is a sounding rocket), this config
+//  has the parameters of an actual orbital launch vehicle:
+//
+//    * GLOW ~12,700 kg  (Electron: 13,000;  Astra: 11,000)
+//    * Stage 1 T/W ~1.4 at liftoff (real launchers are 1.2-1.6)
+//    * Stage 1 burn 155 s (Electron 162, Falcon 9 162, Saturn V 165)
+//    * Stage 1 climbs through max-Q at ~10-12 km, then out of dense
+//      atmosphere by ~50 km
+//    * Stage 2 vacuum burn 240 s, kick stage 3 burn 130 s
+//    * Tsiolkovsky dv = 12,265 m/s -> ~10,800 m/s after losses, LEO-
+//      capable.
+//
+//  Use this config (instead of mission_3stage.json) when you want to
+//  validate the sim against realistic launcher physics: max-Q
+//  altitude, peak dynamic pressure, terminal velocity, gravity turn
+//  shape, etc.  mission_3stage stays around as a fast-running test
+//  config (32s vs 525s here).
+//
+//  Sim t_max = 530 s (155 + 5 coast + 240 + 5 coast + 130 = 535;
+//  margin so propellant is fully consumed before termination).
+//
+//  Aerodynamic deck: re-uses the existing slv3/slv2/slv1 DATCOM
+//  tables.  The vehicle scale is different but the aerodynamic shape
+//  (slender axisymmetric body) is qualitatively similar.  Not a
+//  validated aero match -- documented limit.
+// =====================================================================
+{
+  "propulsion": {
+    "mprop":          3,
+    "vmass0":         12700.0,    // matches stage 1
+    "fmass0":         9500.0,
+    "spi":            290.0,
+    "fuel_flow_rate": 61.3,
+    "moi_roll_0":     150.0,
+    "moi_roll_1":     50.0,
+    "moi_trans_0":    25000.0,    // long slender vehicle -> high pitch MoI
+    "moi_trans_1":    8000.0,
+    "xcg_0":          8.5,        // CG well aft for an 18m vehicle
+    "xcg_1":          7.0,
+    "stages": [
+      {
+        "vmass0":           12700.0,
+        "fmass0":           9500.0,
+        "spi":              290.0,
+        "fuel_flow_rate":   61.3,
+        "xcg_0":            8.5,
+        "xcg_1":            7.0,
+        "moi_roll_0":       150.0,
+        "moi_roll_1":       50.0,
+        "moi_trans_0":      25000.0,
+        "moi_trans_1":      8000.0,
+        "dry_mass_dropped": 1500.0,
+        "coast_to_next":    5.0
+      },
+      {
+        "vmass0":           1700.0,
+        "fmass0":           1200.0,
+        "spi":              320.0,
+        "fuel_flow_rate":   5.0,
+        "xcg_0":            3.5,
+        "xcg_1":            3.0,
+        "moi_roll_0":       20.0,
+        "moi_roll_1":       8.0,
+        "moi_trans_0":      2000.0,
+        "moi_trans_1":      800.0,
+        "dry_mass_dropped": 300.0,
+        "coast_to_next":    5.0
+      },
+      {
+        // Stage 3 (kick stage).  Default fmass0=130 produces the
+        // elliptical reference trajectory (e=0.39, perigee 246 km,
+        // apogee 8554 km, final dvbi=9129 m/s).  This is the
+        // "demonstrates orbital insertion" config.
+        //
+        // For a near-circular LEO trajectory, change fmass0 to 95.0.
+        // The shorter burn reduces excess velocity from 9129 m/s
+        // (1.4 km/s above orbital) to 7866 m/s (very close to
+        // orbital):
+        //   final alt = 246.2 km
+        //   final dvbi = 7866 m/s
+        //   final FPA = -0.03 deg
+        //   orbit: perigee 246 km, apogee 631 km, eccentricity 0.028
+        // This is a typical LEO orbit -- comparable to many real
+        // cubesat deployment orbits.  Truly circular (e<0.001) is
+        // not achievable with a single-burn-to-orbit schedule; real
+        // launchers do a second burn at apogee to circularize.
+        "vmass0":           200.0,
+        "fmass0":           130.0,
+        "spi":              320.0,
+        "fuel_flow_rate":   1.0,
+        "xcg_0":            1.5,
+        "xcg_1":            1.2,
+        "moi_roll_0":       2.0,
+        "moi_roll_1":       0.8,
+        "moi_trans_0":      80.0,
+        "moi_trans_1":      30.0,
+        "dry_mass_dropped": 0.0,
+        "coast_to_next":    0.0
+      }
+    ]
+  },
+
+  // Aero deck.  IMPORTANT: this reuses the generic SLV DATCOM tables
+  // (developed for a small short-burn launcher) with reference area
+  // and diameter scaled up to a 1.2m / 18m vehicle.  This is a rough
+  // analogue, NOT a validated aero match for an Electron/Astra-class
+  // vehicle.  Known limitations:
+  //
+  //   * The pitching-moment derivative clm0 in the SLV deck reflects
+  //     the original ~5:1 fineness ratio.  A real launcher has 15-20:1
+  //     fineness; the actual clm_alpha is larger in magnitude.
+  //     Vehicle is therefore aerodynamically MORE stable here than it
+  //     should be at high alpha.
+  //   * Axial force ca0 vs Mach is in the right ballpark for a slender
+  //     body but the transonic peak (Mach 1.0) may be 20-40% off.
+  //   * No base-drag dependence on stage configuration is modeled here;
+  //     the ca0b table is loaded but only meaningful when thrust is on.
+  //
+  // For trajectory studies that need accurate aero (max-Q load,
+  // separation aero, trim alpha), a proper DATCOM run for the actual
+  // vehicle geometry is the real fix.  For demonstrating that the sim
+  // produces a physically plausible trajectory shape, the current
+  // configuration is sufficient.
+  "aerodynamics": {
+    "maero":     13,
+    "refa":      1.13,     // pi * (0.6)^2 -- 1.2m diameter body
+    "refd":      1.2,
+    "xcg_ref":   7.0,
+    "aero_file": "aero.txt",
+    "tag_ca0":   "ca0slv3_vs_mach",
+    "tag_caa":   "caaslv3_vs_mach",
+    "tag_ca0b":  "ca0bslv3_vs_mach",
+    "tag_cn0":   "cn0slv3_vs_mach_alpha",
+    "tag_clm0":  "clm0slv3_vs_mach_alpha",
+    "tag_clmq":  "clmqslv3_vs_mach"
+  },
+
+  "tvc": {
+    "mtvc":    1,
+    "gtvc":    1.0,
+    "parm":    18.0,    // thrust attachment at rear of 18m vehicle;
+                        // must match control.thrust_loc
+    "del_max": 6.0     // real engines gimbal ~5-7 deg
+  },
+
+  "rcs": {
+    "mrcs_moment": 1,    // RCS ON during coasts to keep attitude
+    "mrcs_force":  0,
+    "rcs_lim":     200.0,
+    "rcs_db":      0.5,
+    "moment_arm":  3.0
+  },
+
+  "control": {
+    // Closed-loop cascaded autopilot.  The thrust_loc field (new in
+    // this build) specifies where thrust is attached on the body
+    // x-axis relative to the nose.  Default 5.0 m matches small-
+    // vehicle Zipfel reference configs; for this 18m launcher with
+    // thrust attached at the rear, we set thrust_loc=18.0.  This
+    // is what makes closed-loop control work on a vehicle of this
+    // size -- without it the gimbal arm computes to a clamped 0.5m
+    // with wrong sign, and the autopilot drives the vehicle into
+    // tumble within a few seconds.
+    //
+    // Gains tuned for this vehicle:
+    //   tau_att=5s         outer (attitude) loop time constant
+    //   vac_rate_damp=2s   inner (rate) loop time constant
+    //   q_max=5 deg/s      saturation on commanded rate
+    //   delimx=6 deg       gimbal mechanical limit
+    //
+    // Validated trajectory: vehicle reaches Falcon-9-class stage 1
+    // burnout numbers at t=160s: 2407 m/s, 104 km altitude.  Max-Q
+    // at t=60s: 27.7 kPa, Mach 1.17, 9.4 km altitude (compare to
+    // Falcon 9 real: ~30 kPa, Mach 1.25, 12 km).
+    "maut":            60,
+    "vac_rate_damp":   2.0,
+    "vac_max_gain":    1.0,
+    "tau_att":         5.0,
+    "q_max":           5.0,
+    "theta_com_inertial": 89.0,
+    "psi_com_inertial":   90.0,
+    "delimx":          6.0,
+    "drlimx":          6.0,
+    "gnmax":           5.0,
+    "gymax":           5.0,
+    "thrust_loc":      18.0
+    // ---- Load relief (experimental, default off) ----
+    // To engage structural load relief during max-Q, add:
+    //   "load_relief_q_threshold": 12000.0,
+    //   "load_relief_q_width":      2000.0
+    //
+    // Blends body-attitude command toward velocity-frame attitude
+    // (alpha->0) when q_dyn exceeds threshold.  Sigmoid in q_dyn.
+    //
+    // NOMINAL TRAJECTORY EFFECT:
+    //   threshold 12 kPa, width 2 kPa:
+    //     max_q_alpha:   97 -> 85 kPa*deg  (-13% mean)
+    //     alpha_at_max_q: 3.25 -> 2.84 deg (-13% mean, -62% sigma)
+    //
+    // ROBUSTNESS UNDER DISPERSIONS (n=200 MC, 1-1.5% sigma propellant):
+    //   The same setting produces 10/200 NaN end-states vs 1/200
+    //   baseline.  Affected runs diverge in altitude/dvbi
+    //   downstream of the relief phase -- the velocity-frame
+    //   blending transitions create instability for dispersion
+    //   combinations that put the vehicle in the wrong phase of
+    //   the gravity turn when relief engages.
+    //
+    //   Mild setting (15 kPa, 5 kPa): 8/200 NaN -- also unstable.
+    //
+    // INTERPRETATION:
+    //   This is a SIMPLIFIED load relief.  Real launchers use
+    //   accelerometer feedback to detect lateral loads and command
+    //   gimbal accordingly, which is robust under dispersions
+    //   because it tracks an actual measurement rather than a
+    //   computed velocity vector.  The velocity-frame-blending
+    //   variant here demonstrates the principle on the nominal
+    //   trajectory but is not production-grade.
+    //
+    // Disabled by default (q_threshold = 0).  Use at own risk.
+  },
+
+  "guidance": {
+    // Open-loop attitude program.  Pitches from 89 deg (near-vertical)
+    // to 20 deg over t=10 to t=150 (stage 1).  After t_att_end the
+    // body angle holds at 20 deg in inertial frame, while the
+    // velocity vector continues to rotate naturally under
+    // gravity-turn dynamics.  By stage 3 burnout the result is a
+    // near-horizontal insertion (FPA ~0.4 deg) at 247 km altitude
+    // and 9129 m/s -- a stable elliptical orbit (perigee 246 km,
+    // apogee 8554 km, eccentricity 0.39).
+    //
+    // NOTE: this is open-loop trajectory shaping, not closed-loop
+    // PEG-style guidance.  A real launcher would use velocity-frame
+    // attitude control and terminate the burn when the desired
+    // orbital state is achieved.  For sensitivity studies that want
+    // to exercise launcher-class flight regimes, this open-loop
+    // schedule is sufficient: it spans realistic max-Q (26 kPa at
+    // Mach 0.9), reaches LEO velocity, and the dynamics are
+    // numerically stable across reasonable input perturbations.
+    //
+    // Tuning the perigee/apogee further (e.g. for a true circular
+    // orbit) would mean shortening the stage 3 burn or adjusting
+    // the pitch end angle.  Left as-is to demonstrate "vehicle
+    // reaches orbital trajectory" rather than "vehicle achieves
+    // specific orbit."
+    "mguide":          2,
+    "t_att_start":     10.0,
+    "t_att_end":       150.0,
+    "theta_com_start": 89.0,
+    "theta_com_end":   20.0,
+    "psi_com_start":   90.0,
+    "psi_com_end":     90.0
+  },
+
+  "ins": {
+    "mins":        4,
+    "ins_step":    1.0,
+    "ins_align":   1.0,
+    "bias_accel":  [1.0e-4, 1.0e-4, 1.0e-4],
+    "bias_gyro":   [1.0e-5, 1.0e-5, 1.0e-5],
+    "noise_accel": 1.0e-3,
+    "noise_gyro":  1.0e-4
+  },
+
+  "gps": {
+    "mgps":           2,
+    "gps_step":       1.0,
+    "gps_alt":        20000.0,
+    "noise_pos":      5.0,
+    "noise_vel":      0.1,
+    "noise_seed":     1.0
+  },
+
+  "startrack": {
+    "mstar":          2,
+    "startrack_step": 1.0,
+    "startrack_alt":  100000.0,
+    "star_acqtime":   2.0,
+    "tilt_noise":     1.0e-4
+  },
+
+  "intercept": {
+    "check_alt_max":  false,    // don't terminate on altitude; orbital
+    "check_time_max": true,
+    "check_tumble":   true,     // catch failed-orbit re-entry tumble
+                                // (relevant for MC dispersions that
+                                // produce sub-orbital trajectories)
+    "alt_max":        2000000.0,
+    "t_max":          540.0,
+    "rate_max":       3.49      // 200 deg/s; vehicles spinning faster
+                                // than this are structurally lost
+  },
+
+  "launch": {
+    "lonx0":   -80.0,
+    "latx0":    28.5,           // KSC latitude
+    "alt0":     0.0,
+    "dvbe0":    0.01,
+    "psivdx0":  90.0,           // due east
+    "thtvdx0":  89.0,           // near-vertical
+    "psibdx0":  90.0,
+    "thtbdx0":  89.0,
+    "phibdx0":  0.0,
+    "ppx0":     0.0,
+    "qqx0":     0.0,
+    "rrx0":     0.0
+  },
+
+  "sim": {
+    "dt":    0.01,
+    "t_max": 540.0
+  }
+}

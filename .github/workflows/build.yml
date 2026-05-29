@@ -1,0 +1,129 @@
+name: build-and-test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Cancel in-progress runs for the same PR/branch when a new commit lands.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+
+    env:
+      IMGUI_VERSION: 1.91.6
+      IMPLOT_VERSION: 0.16
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+              build-essential \
+              libglfw3-dev \
+              libgl1-mesa-dev \
+              curl \
+              ca-certificates
+          g++ --version
+          make --version | head -1
+
+      - name: Cache third-party libraries
+        id: cache-thirdparty
+        uses: actions/cache@v4
+        with:
+          path: rocket_6dof/third_party
+          # Bump the cache key if IMGUI_VERSION / IMPLOT_VERSION ever changes
+          # or if the third_party README files change.
+          key: thirdparty-imgui${{ env.IMGUI_VERSION }}-implot${{ env.IMPLOT_VERSION }}-v1
+
+      - name: Fetch Dear ImGui, ImPlot, stb_image_write
+        if: steps.cache-thirdparty.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tp
+          cd rocket_6dof
+
+          # Dear ImGui
+          curl -L -o /tmp/tp/imgui.tar.gz \
+              "https://github.com/ocornut/imgui/archive/refs/tags/v${IMGUI_VERSION}.tar.gz"
+          tar -xzf /tmp/tp/imgui.tar.gz -C /tmp/tp
+          for f in imconfig.h imgui.cpp imgui.h imgui_draw.cpp imgui_internal.h \
+                   imgui_tables.cpp imgui_widgets.cpp imstb_rectpack.h \
+                   imstb_textedit.h imstb_truetype.h; do
+              cp "/tmp/tp/imgui-${IMGUI_VERSION}/$f" third_party/imgui/
+          done
+          for f in imgui_impl_glfw.cpp imgui_impl_glfw.h \
+                   imgui_impl_opengl3.cpp imgui_impl_opengl3.h \
+                   imgui_impl_opengl3_loader.h; do
+              cp "/tmp/tp/imgui-${IMGUI_VERSION}/backends/$f" third_party/imgui/backends/
+          done
+
+          # ImPlot
+          curl -L -o /tmp/tp/implot.tar.gz \
+              "https://github.com/epezent/implot/archive/refs/tags/v${IMPLOT_VERSION}.tar.gz"
+          tar -xzf /tmp/tp/implot.tar.gz -C /tmp/tp
+          for f in implot.cpp implot.h implot_internal.h implot_items.cpp; do
+              cp "/tmp/tp/implot-${IMPLOT_VERSION}/$f" third_party/implot/
+          done
+
+          # stb_image_write (single header from upstream master)
+          curl -L -o third_party/stb/stb_image_write.h \
+              "https://raw.githubusercontent.com/nothings/stb/master/stb_image_write.h"
+
+      - name: Build CLI targets (make all)
+        working-directory: rocket_6dof
+        run: make all
+
+      - name: Build GUI (make mission_gui)
+        working-directory: rocket_6dof
+        # The GUI binary requires a display to run, but it must still
+        # compile and link cleanly.  CI does not run it.
+        run: make mission_gui
+
+      - name: Run regression tests (15 binaries, must all report 0 failures)
+        working-directory: rocket_6dof
+        run: |
+          set -euo pipefail
+          tests=(env_sweep dyn_test cad_test prop_test aero_test
+                 intercept_test control_test guidance_test ins_test
+                 gps_test startrack_test rcs_test json_test
+                 distributions_test integration_test)
+          fail=0
+          for t in "${tests[@]}"; do
+              echo "::group::$t"
+              if ./$t 2>&1 | tee /tmp/$t.log | grep -q "Total failures: 0"; then
+                  echo "PASS: $t"
+              else
+                  echo "FAIL: $t"
+                  fail=$((fail+1))
+              fi
+              echo "::endgroup::"
+          done
+          if [ $fail -gt 0 ]; then
+              echo "::error::$fail of ${#tests[@]} regression tests failed"
+              exit 1
+          fi
+          echo "All ${#tests[@]} regression tests passed."
+
+      - name: Verify mission_launcher.json baseline
+        working-directory: rocket_6dof
+        run: |
+          set -euo pipefail
+          ./mission mission_launcher.json | tee /tmp/mission.log
+          if ! grep -q "Final altitude:   247089.7 m" /tmp/mission.log; then
+              echo "::error::Altitude baseline drifted from 247089.7 m"
+              exit 1
+          fi
+          if ! grep -q "Final dvbi:       9129.46 m/s" /tmp/mission.log; then
+              echo "::error::Velocity baseline drifted from 9129.46 m/s"
+              exit 1
+          fi
+          echo "Mission baseline matches: 247089.7 m / 9129.46 m/s"

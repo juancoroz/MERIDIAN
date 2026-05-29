@@ -1,0 +1,193 @@
+// =====================================================================
+//  monte_carlo_3stage.json -- Multi-stage MC + Sobol for rocket_6dof
+//
+//  Builds on mission_3stage.json by adding propulsion variables on
+//  each of the 3 stages.  Sobol groups by stage so we can read off
+//  how much of the variance comes from each stage individually.
+// =====================================================================
+{
+  "propulsion": {
+    "mprop":          3,
+    "vmass0":         900.0,
+    "fmass0":         400.0,
+    "spi":            270.0,
+    "fuel_flow_rate": 40.0,
+    "moi_roll_0":     12.0,
+    "moi_roll_1":     6.0,
+    "moi_trans_0":    600.0,
+    "moi_trans_1":    300.0,
+    "xcg_0":          3.5,
+    "xcg_1":          3.0,
+    "stages": [
+      {
+        "vmass0":           900.0,
+        "fmass0":           400.0,
+        "spi":              270.0,
+        "fuel_flow_rate":   40.0,
+        "xcg_0":            3.5,
+        "xcg_1":            3.0,
+        "moi_roll_0":       12.0,
+        "moi_roll_1":       6.0,
+        "moi_trans_0":      600.0,
+        "moi_trans_1":      300.0,
+        "dry_mass_dropped": 200.0,
+        "coast_to_next":    1.0
+      },
+      {
+        "vmass0":           300.0,
+        "fmass0":           200.0,
+        "spi":              290.0,
+        "fuel_flow_rate":   20.0,
+        "xcg_0":            2.8,
+        "xcg_1":            2.5,
+        "moi_roll_0":       6.0,
+        "moi_roll_1":       3.0,
+        "moi_trans_0":      300.0,
+        "moi_trans_1":      150.0,
+        "dry_mass_dropped": 100.0,
+        "coast_to_next":    1.0
+      },
+      {
+        "vmass0":           120.0,
+        "fmass0":           80.0,
+        "spi":              310.0,
+        "fuel_flow_rate":   20.0,
+        "xcg_0":            2.3,
+        "xcg_1":            2.1,
+        "moi_roll_0":       3.0,
+        "moi_roll_1":       1.5,
+        "moi_trans_0":      150.0,
+        "moi_trans_1":      75.0,
+        "dry_mass_dropped": 0.0,
+        "coast_to_next":    0.0
+      }
+    ]
+  },
+
+  "aerodynamics": {
+    "maero":     13, "refa": 1.0, "refd": 1.0, "xcg_ref": 3.0,
+    "aero_file": "aero.txt",
+    "tag_ca0":   "ca0slv3_vs_mach",
+    "tag_caa":   "caaslv3_vs_mach",
+    "tag_ca0b":  "ca0bslv3_vs_mach",
+    "tag_cn0":   "cn0slv3_vs_mach_alpha",
+    "tag_clm0":  "clm0slv3_vs_mach_alpha",
+    "tag_clmq":  "clmqslv3_vs_mach"
+  },
+
+  "tvc":      { "mtvc": 1, "gtvc": 1.0, "parm": 5.0, "del_max": 15.0 },
+  "rcs":      { "mrcs_moment": 0, "mrcs_force": 0 },
+  "control":  {
+    "maut":            60,
+    "vac_rate_damp":   0.5,
+    "vac_att_loop":    2.0,
+    "vac_rate_loop":   1.5,
+    "atm_inner_loop":  6.0,
+    "atm_outer_loop":  2.0,
+    "atm_inner_zeta":  0.7,
+    "atm_outer_zeta":  0.7,
+    "thtbdcomx_start": 89.0,
+    "thtbdcomx_end":   70.0,
+    "t_start_pitch":   3.0,
+    "t_end_pitch":     15.0,
+    "psibdcomx":       90.0,
+    "phibdcomx":       0.0
+  },
+  "guidance": { "mguid": 0 },
+  "ins": {
+    "mins":        4,
+    "ins_step":    1.0,
+    "ins_align":   1.0,
+    "bias_accel":  [1.0e-4, 1.0e-4, 1.0e-4],
+    "bias_gyro":   [1.0e-5, 1.0e-5, 1.0e-5],
+    "noise_accel": 1.0e-3,
+    "noise_gyro":  1.0e-4
+  },
+  "gps": {
+    "mgps":           2,
+    "gps_step":       1.0,
+    "gps_alt":        20000.0,
+    "noise_pos":      5.0,
+    "noise_vel":      0.1,
+    "noise_seed":     1.0
+  },
+  "startrack": {
+    "mstar":          2,
+    "startrack_step": 1.0,
+    "startrack_alt":  100000.0,
+    "star_acqtime":   2.0,
+    "tilt_noise":     1.0e-4
+  },
+  "intercept": {
+    "check_alt_max":  true,
+    "check_time_max": true,
+    "alt_max":        100000.0,
+    "t_max":          32.0
+  },
+  "launch": {
+    "lonx0": -80.0, "latx0": 28.5, "alt0": 0.0,
+    "dvbe0": 0.01, "psivdx0": 90.0,
+    "thtvdx0": 89.0, "psibdx0": 90.0, "thtbdx0": 89.0,
+    "phibdx0": 0.0, "ppx0": 0.0, "qqx0": 0.0, "rrx0": 0.0
+  },
+  "sim":      { "dt": 0.01, "t_max": 32.0 },
+
+  "monte_carlo": {
+    "n_runs": 200,
+    "n_workers": 4,
+    "seed": 42,
+    "variables": [
+      { "path": "propulsion.stages[0].fmass0",         "distribution": "normal",  "mean": 400.0, "stddev": 8.0  },
+      { "path": "propulsion.stages[0].fuel_flow_rate", "distribution": "normal",  "mean": 40.0,  "stddev": 1.0  },
+      { "path": "propulsion.stages[1].fmass0",         "distribution": "normal",  "mean": 200.0, "stddev": 4.0  },
+      { "path": "propulsion.stages[1].spi",            "distribution": "normal",  "mean": 290.0, "stddev": 5.0  },
+      { "path": "propulsion.stages[2].fmass0",         "distribution": "normal",  "mean": 80.0,  "stddev": 2.0  },
+      { "path": "launch.thtbdx0",                       "distribution": "uniform", "low":  88.5,  "high": 89.5  },
+      { "path": "gps.noise_seed",                       "distribution": "uniform", "low":  1.0,   "high": 1e6  }
+    ],
+    "outputs": [
+      "t_end", "alt", "dvbi", "fpa", "theta", "psi",
+      "ins_pos_err", "ins_vel_err", "ins_att_err",
+      "delecx", "delrcx", "gps_updates",
+      "sin_psi", "cos_psi", "sin_theta", "cos_theta"
+    ]
+  },
+
+  "sobol": {
+    "n_base": 128,
+    "n_workers": 4,
+    "seed": 42,
+    "n_bootstrap": 500,
+    "second_order": true,
+    "groups": [
+      {
+        "name": "stage1",
+        "paths": [
+          "propulsion.stages[0].fmass0",
+          "propulsion.stages[0].fuel_flow_rate"
+        ]
+      },
+      {
+        "name": "stage2",
+        "paths": [
+          "propulsion.stages[1].fmass0",
+          "propulsion.stages[1].spi"
+        ]
+      },
+      {
+        "name": "stage3",
+        "paths": [
+          "propulsion.stages[2].fmass0"
+        ]
+      },
+      {
+        "name": "launch",
+        "paths": [ "launch.thtbdx0" ]
+      },
+      {
+        "name": "sensor",
+        "paths": [ "gps.noise_seed" ]
+      }
+    ]
+  }
+}

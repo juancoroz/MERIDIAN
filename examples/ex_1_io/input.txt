@@ -1,0 +1,11 @@
+# Inputs for the Section 4.1 first-order servo example.
+# Same physical values as the hard-coded PDF page 42 model, so the
+# output should match PDF page 43 byte-for-byte.
+
+Model
+gamma0    = 0.0      initial flight-path angle (rad)
+gamma_cmd = 1.0      commanded flight-path angle (rad)
+k         = 1000.0   gain (selected for tau = V/K = 1 s)
+v         = 1000.0   missile velocity (m/s)
+tmax      = 2.0
+dt        = 0.01

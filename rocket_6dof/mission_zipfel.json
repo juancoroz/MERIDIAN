@@ -1,0 +1,68 @@
+// =====================================================================
+//  mission_zipfel.json -- Baseline mission flown against Zipfel's full
+//  Missile DATCOM aero deck (aero_deck_SLV.asc), not our truncated
+//  aero.txt.  The trajectory should be very close to mission.json's,
+//  with small differences from the higher-resolution Mach axis (17
+//  Zipfel rows vs 12 ours) and a couple of extra Mach data points
+//  that aren't in the truncated table.
+// =====================================================================
+{
+  "propulsion": {
+    "mprop":          3,
+    "vmass0":         1000.0,
+    "fmass0":         500.0,
+    "spi":            300.0,
+    "fuel_flow_rate": 20.0,
+    "moi_roll_0":     10.0,  "moi_roll_1":  5.0,
+    "moi_trans_0":    500.0, "moi_trans_1": 250.0,
+    "xcg_0":          3.0,   "xcg_1":       2.5
+  },
+  "aerodynamics": {
+    "maero":     13,
+    "refa":      1.0,
+    "refd":      1.0,
+    "xcg_ref":   3.0,
+    "aero_file": "aero_deck_SLV.asc",     // <-- DATCOM format
+    "tag_ca0":   "ca0slv3_vs_mach",
+    "tag_caa":   "caaslv3_vs_mach",
+    "tag_ca0b":  "ca0bslv3_vs_mach",
+    "tag_cn0":   "cn0slv3_vs_mach_alpha",
+    "tag_clm0":  "clm0slv3_vs_mach_alpha",
+    "tag_clmq":  "clmqslv3_vs_mach"
+  },
+  "tvc":     { "mtvc": 1, "gtvc": 1.0, "parm": 5.0, "del_max": 15.0 },
+  "rcs":     { "mrcs_moment": 0, "mrcs_force": 0 },
+  "control": {
+    "maut": 60, "vac_rate_damp": 0.5, "vac_max_gain": 1.0,
+    "tau_att": 1.0, "q_max": 15.0,
+    "theta_com_inertial": 89.0, "psi_com_inertial": 90.0,
+    "delimx": 15.0, "drlimx": 15.0,
+    "gnmax": 5.0, "gymax": 5.0
+  },
+  "guidance": {
+    "mguide":          2,
+    "t_att_start":     3.0,
+    "t_att_end":       15.0,
+    "theta_com_start": 89.0,
+    "theta_com_end":   70.0,
+    "psi_com_start":   90.0,
+    "psi_com_end":     90.0
+  },
+  "ins":   { "mins": 1, "bias_accel": [0.001, 0, 0], "bias_gyro": [1.0e-5, 0, 0] },
+  "gps":   { "mgps": 2, "gps_step": 1.0, "rpos": 5.0, "rvel": 0.1, "noise_seed": 12345 },
+  "startrack": {
+    "mstar": 2, "startrack_step": 1.0, "startrack_alt": 100000.0,
+    "star_acqtime": 2.0, "tilt_noise": 1.0e-4
+  },
+  "intercept": {
+    "check_alt_max": true, "check_time_max": true,
+    "alt_max": 100000.0, "t_max": 25.0
+  },
+  "launch": {
+    "lonx0": -80.0, "latx0": 28.5, "alt0": 0.0,
+    "dvbe0": 0.01, "psivdx0": 90.0, "thtvdx0": 89.0,
+    "psibdx0": 90.0, "thtbdx0": 89.0, "phibdx0": 0.0
+  },
+  "logger": { "sample_period": 0.1, "filename": "mission_zipfel_log.csv" },
+  "sim":    { "dt": 0.01, "t_max": 26.0 }
+}

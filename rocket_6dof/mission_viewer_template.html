@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rocket 6DOF Mission Trajectory Viewer</title>
+<style>
+  :root {
+    --bg:        #0e1117;
+    --panel:     #161b22;
+    --border:    #30363d;
+    --fg:        #c9d1d9;
+    --fg-dim:    #8b949e;
+    --accent:    #58a6ff;
+    --grid:      #21262d;
+    --series-1:  #58a6ff;
+    --series-2:  #f78166;
+    --series-3:  #56d364;
+    --series-4:  #d2a8ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+    padding: 20px;
+  }
+  h1 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .subtitle {
+    color: var(--fg-dim);
+    margin-bottom: 20px;
+    font-size: 12px;
+  }
+  .panels {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .panel h2 {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .summary {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px 28px;
+  }
+  .summary .metric {
+    display: flex;
+    flex-direction: column;
+  }
+  .summary .metric .label {
+    color: var(--fg-dim);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .summary .metric .value {
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 15px;
+    color: var(--fg);
+    margin-top: 2px;
+  }
+  .legend {
+    display: flex;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--fg-dim);
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .legend .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+  footer {
+    margin-top: 20px;
+    color: var(--fg-dim);
+    font-size: 11px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>Rocket 6DOF Mission Trajectory Viewer</h1>
+<div class="subtitle">
+  Single-stage sounding-rocket ascent, 25-second burn from Cape Canaveral.
+  All sensors active: GPS, StarTrack, INS fusion.
+</div>
+
+<div class="summary" id="summary"></div>
+
+<div class="panels">
+  <div class="panel">
+    <h2>Altitude &amp; Speed vs Time</h2>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--series-1)"></span>Altitude (km)</span>
+      <span><span class="dot" style="background:var(--series-2)"></span>Speed (m/s, inertial)</span>
+    </div>
+    <canvas id="c_alt_speed" width="600" height="280"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Body Attitude vs Time</h2>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--series-1)"></span>Pitch θ (deg)</span>
+      <span><span class="dot" style="background:var(--series-2)"></span>Yaw ψ (deg)</span>
+      <span><span class="dot" style="background:var(--series-3)"></span>Roll φ (deg)</span>
+      <span><span class="dot" style="background:var(--series-4)"></span>Flight-path angle (deg)</span>
+    </div>
+    <canvas id="c_attitude" width="600" height="280"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Mach &amp; Dynamic Pressure vs Time</h2>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--series-1)"></span>Mach number</span>
+      <span><span class="dot" style="background:var(--series-2)"></span>q (kPa)</span>
+    </div>
+    <canvas id="c_aero" width="600" height="280"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Autopilot &amp; TVC vs Time</h2>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--series-1)"></span>ancomx (g)</span>
+      <span><span class="dot" style="background:var(--series-2)"></span>δ-elevator (deg)</span>
+      <span><span class="dot" style="background:var(--series-3)"></span>angle of attack (deg)</span>
+    </div>
+    <canvas id="c_control" width="600" height="280"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>INS Errors vs Time</h2>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--series-1)"></span>Position error (m)</span>
+      <span><span class="dot" style="background:var(--series-2)"></span>Velocity error (m/s)</span>
+      <span><span class="dot" style="background:var(--series-3)"></span>Attitude error (mrad)</span>
+    </div>
+    <canvas id="c_ins" width="600" height="280"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Mass &amp; Thrust vs Time</h2>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--series-1)"></span>Vehicle mass (kg)</span>
+      <span><span class="dot" style="background:var(--series-2)"></span>Thrust (kN)</span>
+    </div>
+    <canvas id="c_propulsion" width="600" height="280"></canvas>
+  </div>
+</div>
+
+<footer>
+  Generated from <code>mission_log.csv</code>.
+  Plot rendering: pure HTML5 Canvas, no external dependencies.
+</footer>
+
+<!-- CSV_DATA_INJECTION_POINT -->
+
+<script>
+// =====================================================================
+//  Plotting code
+// =====================================================================
+
+// Parse the embedded CSV
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const header = lines[0].split(',');
+  const rows = lines.slice(1).map(line => {
+    const cells = line.split(',');
+    const row = {};
+    header.forEach((col, i) => { row[col] = parseFloat(cells[i]); });
+    return row;
+  });
+  return { header, rows };
+}
+
+const data = parseCSV(window.CSV_DATA);
+
+// Summary metrics: take last row (mission end state)
+const last = data.rows[data.rows.length - 1];
+const first = data.rows[0];
+const summaryEl = document.getElementById('summary');
+const peakAlt = Math.max(...data.rows.map(r => r.alt));
+const peakSpd = Math.max(...data.rows.map(r => r.dvbi));
+const peakMach = Math.max(...data.rows.map(r => r.mach));
+const peakQ = Math.max(...data.rows.map(r => r.q_dyn));
+
+function fmt(v, n = 2) {
+  if (!isFinite(v)) return '—';
+  return v.toFixed(n);
+}
+
+const metrics = [
+  ['Duration',        fmt(last.t, 1) + ' s'],
+  ['Peak Altitude',   fmt(peakAlt / 1000, 2) + ' km'],
+  ['Peak Speed',      fmt(peakSpd, 0) + ' m/s'],
+  ['Peak Mach',       fmt(peakMach, 2)],
+  ['Peak q',          fmt(peakQ / 1000, 1) + ' kPa'],
+  ['Final FPA',       fmt(last.fpa, 1) + '°'],
+  ['Final Mass',      fmt(last.vmass, 0) + ' kg'],
+  ['Propellant burned', fmt(first.vmass - last.vmass, 0) + ' kg'],
+  ['INS pos err',     fmt(last.ins_pos_err, 1) + ' m'],
+  ['INS vel err',     fmt(last.ins_vel_err, 3) + ' m/s'],
+  ['INS att err',     fmt(last.ins_att_err * 1000, 2) + ' mrad'],
+  ['GPS updates',     last.gps_updates + ' / Star ' + last.star_updates],
+];
+summaryEl.innerHTML = metrics.map(([k, v]) =>
+  `<div class="metric"><span class="label">${k}</span><span class="value">${v}</span></div>`
+).join('');
+
+// =====================================================================
+//  Canvas plot helper
+//
+//  Each series is rendered with its own auto-scaled y-axis (0..max),
+//  so multi-magnitude data can be overlaid meaningfully.  Y-axis ticks
+//  are labeled with the FIRST series's units; other series show only
+//  their shape.  For interpretation, see the legend above each plot.
+// =====================================================================
+function plotLines(canvasId, series, xKey = 't') {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const padL = 50, padR = 16, padT = 10, padB = 28;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+
+  // x extent
+  const xs = data.rows.map(r => r[xKey]);
+  const xmin = Math.min(...xs);
+  const xmax = Math.max(...xs);
+  function xp(x) { return padL + (x - xmin) / (xmax - xmin) * innerW; }
+
+  // Compute per-series y range and a normalization function.
+  // The FIRST series uses its own data range and the y-axis tick labels.
+  // Subsequent series are rendered using their own data range mapped to
+  // the same pixel span -- so their shape is visible regardless of
+  // magnitude.
+  const ranges = series.map(s => {
+    const scale = s.scale || 1;
+    const offset = s.offset || 0;
+    let lo = Infinity, hi = -Infinity;
+    data.rows.forEach(r => {
+      const v = r[s.key] * scale + offset;
+      if (isFinite(v)) {
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+      }
+    });
+    if (!isFinite(lo) || !isFinite(hi)) { lo = 0; hi = 1; }
+    if (lo === hi) { lo -= 0.5; hi += 0.5; }
+    const pad = (hi - lo) * 0.05;
+    return { lo: lo - pad, hi: hi + pad };
+  });
+
+  // Pixel y for series i
+  function yp_for(i, y) {
+    const r = ranges[i];
+    return padT + (1 - (y - r.lo) / (r.hi - r.lo)) * innerH;
+  }
+
+  // Grid + axes (labels use first series' range)
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '11px SFMono-Regular, Consolas, monospace';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+
+  const yTicks = 5;
+  const firstRange = ranges[0];
+  for (let i = 0; i <= yTicks; i++) {
+    const yv = firstRange.lo + (firstRange.hi - firstRange.lo) * i / yTicks;
+    const py = yp_for(0, yv);
+    ctx.beginPath();
+    ctx.moveTo(padL, py);
+    ctx.lineTo(W - padR, py);
+    ctx.stroke();
+    const absv = Math.abs(yv);
+    const decimals = absv < 1 ? 3 : (absv < 10 ? 2 : (absv < 100 ? 1 : 0));
+    ctx.fillText(yv.toFixed(decimals), padL - 4, py);
+  }
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const xTicks = 6;
+  for (let i = 0; i <= xTicks; i++) {
+    const xv = xmin + (xmax - xmin) * i / xTicks;
+    const px = xp(xv);
+    ctx.beginPath();
+    ctx.moveTo(px, padT);
+    ctx.lineTo(px, H - padB);
+    ctx.stroke();
+    ctx.fillText(xv.toFixed(1), px, H - padB + 4);
+  }
+
+  // Series
+  series.forEach((s, idx) => {
+    const scale = s.scale || 1;
+    const offset = s.offset || 0;
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = idx === 0 ? 2.0 : 1.5;
+    ctx.beginPath();
+    let started = false;
+    data.rows.forEach(r => {
+      const x = r[xKey];
+      const y = r[s.key] * scale + offset;
+      if (!isFinite(x) || !isFinite(y)) return;
+      const px = xp(x), py = yp_for(idx, y);
+      if (!started) { ctx.moveTo(px, py); started = true; }
+      else          { ctx.lineTo(px, py); }
+    });
+    ctx.stroke();
+  });
+}
+
+const C = {
+  s1: getComputedStyle(document.documentElement).getPropertyValue('--series-1').trim(),
+  s2: getComputedStyle(document.documentElement).getPropertyValue('--series-2').trim(),
+  s3: getComputedStyle(document.documentElement).getPropertyValue('--series-3').trim(),
+  s4: getComputedStyle(document.documentElement).getPropertyValue('--series-4').trim(),
+};
+
+// Altitude (in km via scale=0.001) on left, speed on right -- we use a
+// shared y-axis but pick scales so the magnitudes are similar.
+plotLines('c_alt_speed', [
+  { name: 'Altitude (km)',  key: 'alt',  color: C.s1, scale: 0.001 },
+  { name: 'Speed (m/s)',    key: 'dvbi', color: C.s2 },
+]);
+
+plotLines('c_attitude', [
+  { name: 'theta', key: 'theta', color: C.s1 },
+  { name: 'psi',   key: 'psi',   color: C.s2 },
+  { name: 'phi',   key: 'phi',   color: C.s3 },
+  { name: 'fpa',   key: 'fpa',   color: C.s4 },
+]);
+
+plotLines('c_aero', [
+  { name: 'Mach',  key: 'mach', color: C.s1 },
+  { name: 'q kPa', key: 'q_dyn', color: C.s2, scale: 0.001 },
+]);
+
+plotLines('c_control', [
+  { name: 'ancomx',  key: 'ancomx',  color: C.s1 },
+  { name: 'delecx',  key: 'delecx',  color: C.s2 },
+  { name: 'alpha',   key: 'alpha',   color: C.s3 },
+]);
+
+plotLines('c_ins', [
+  { name: 'pos err (m)',   key: 'ins_pos_err',  color: C.s1 },
+  { name: 'vel err (m/s)', key: 'ins_vel_err',  color: C.s2 },
+  { name: 'att err (mrad)',key: 'ins_att_err',  color: C.s3, scale: 1000 },
+]);
+
+plotLines('c_propulsion', [
+  { name: 'vmass (kg)',  key: 'vmass',  color: C.s1 },
+  { name: 'thrust (kN)', key: 'thrust', color: C.s2, scale: 0.001 },
+]);
+</script>
+</body>
+</html>

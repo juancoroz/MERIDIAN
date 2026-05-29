@@ -1,0 +1,18 @@
+// =====================================================================
+//  Minimal config: only override the burn time.  Everything else uses
+//  whatever default the block constructors set.  This is mainly to
+//  exercise the "missing keys take defaults" code path; the resulting
+//  mission won't fly well because block defaults aren't configured for
+//  a rocket launch -- but it should run without crashing.
+// =====================================================================
+{
+  "propulsion": {
+    "fmass0":         100.0,        // only 100 kg of fuel
+    "fuel_flow_rate": 20.0          // -> 5 sec burn
+  },
+  "intercept": {
+    "check_time_max": true,
+    "t_max":          7.0
+  },
+  "logger": { "filename": "mission_minimal_log.csv" }
+}
