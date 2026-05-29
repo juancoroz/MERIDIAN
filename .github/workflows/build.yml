@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install build dependencies
         run: |
@@ -37,12 +37,12 @@ jobs:
 
       - name: Cache third-party libraries
         id: cache-thirdparty
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: rocket_6dof/third_party
           # Bump the cache key if IMGUI_VERSION / IMPLOT_VERSION ever changes
           # or if the third_party README files change.
-          key: thirdparty-imgui${{ env.IMGUI_VERSION }}-implot${{ env.IMPLOT_VERSION }}-v1
+          key: thirdparty-imgui${{ env.IMGUI_VERSION }}-implot${{ env.IMPLOT_VERSION }}-v2
 
       - name: Fetch Dear ImGui, ImPlot, stb_image_write
         if: steps.cache-thirdparty.outputs.cache-hit != 'true'
@@ -50,6 +50,14 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/tp
           cd rocket_6dof
+
+          # Ensure the target subdirectories exist.  README.md files in
+          # the repo normally anchor these in git, but a stripped fork
+          # or a release tarball might miss them; mkdir -p is a no-op
+          # if they're already there.
+          mkdir -p third_party/imgui/backends \
+                   third_party/implot \
+                   third_party/stb
 
           # Dear ImGui
           curl -L -o /tmp/tp/imgui.tar.gz \
